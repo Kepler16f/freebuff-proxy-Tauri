@@ -652,17 +652,22 @@ export function createProxyHandler(ctx) {
      * 上游按整小时单价预扣、早退按实际占用退还（见 docs/account-scheduling-and-refund.md §3），
      * 旧行为在报错时把「账号数+1」个账号挨个 admit 一遍，一次故障就买断好几条整小时
      * （issue #7）。复用已有热 session 不消耗预算。
+     *
+     * ⚠️ **0 = 不限制**（控制台/配置文档/API 校验三处一致的契约），不是"零预算"。
+     * 曾经这里无条件 Math.max(0, ...)，把 0 存成 remaining:0，于是
+     * app-context 的预算闸门把**每个账号**都判成 session_budget_exhausted 跳过，
+     * 整个代理固定返回 429 no_available_account——本地自锁，与上游额度无关。
+     * 因此 0 必须映射为 null（= 不限额），而不是一个会被用尽的数字。
+     * 见 .agents/notes/implemented/bug-fix/2026-09-24-zero-session-budget-means-unlimited.md
      */
     const budgetSetting = settingsStore?.get?.()?.maxNewSessionsPerRequest
+    const budgetRaw = Number.isFinite(budgetSetting)
+      ? budgetSetting
+      : config.limits.maxNewSessionsPerRequest
+    const budgetLimit = Number.isFinite(budgetRaw) ? Math.floor(budgetRaw) : 2
     const sessionBudget = {
-      remaining: Math.max(
-        0,
-        Math.floor(
-          Number.isFinite(budgetSetting)
-            ? budgetSetting
-            : (config.limits.maxNewSessionsPerRequest ?? 2),
-        ),
-      ),
+      // 0（或负数）= 不限额：remaining 为 null 时闸门恒放行、也不递减。
+      remaining: budgetLimit > 0 ? budgetLimit : null,
     }
     /** 当前持锁账号 runtime（账号级串行化：一个账号同一时间只处理一个 chat）。 */
     let heldRt = null
@@ -1107,7 +1112,10 @@ export function createProxyHandler(ctx) {
               err.code === 'client_gone' ||
               // 调度预算已耗尽：预算是整个请求一份，后续每轮都会立即再超，
               // 重试只会白烧 maxAttempts 次循环，直接快速失败让客户端重试。
-              err.code === 'scheduling_timeout'
+              err.code === 'scheduling_timeout' ||
+              // 本次请求的新会话预算已用尽：同样在整个请求内不会恢复
+              // （重新选号也拿不到预算），重试只会白转一轮，直接返回可操作的错误码。
+              err.code === 'session_budget_exhausted'
             if (isTerminal) {
               if (err.code !== 'client_gone') mapAndSendError(res, err)
               return

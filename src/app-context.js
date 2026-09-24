@@ -909,8 +909,9 @@ export class AccountRuntimes {
    * 同模型热 session > 已用过的账号（最近用过的优先）> 从未用过的账号；
    * 冷却 / 余额不足 / 新会话预算耗尽的账号跳过。
    * @param {string} model
-   * @param {{ sessionBudget?: { remaining: number }, skipKeys?: Set<string> }} [opts]
+   * @param {{ sessionBudget?: { remaining: number | null }, skipKeys?: Set<string> }} [opts]
    *   sessionBudget: 本次下游请求还能新建几个上游会话（Freebucks 计费单位）。
+   *   **remaining 为 null 表示不限额**（控制台预算设为 0 = 不限），恒放行且不递减。
    *   复用已有热 session 不消耗预算；预算耗尽后只允许复用，不再 admit。
    *   skipKeys: 本次请求已排队超时过的账号，不再重复选中。
    */
@@ -1051,7 +1052,13 @@ export class AccountRuntimes {
         // 多个账号各买一条计费会话（issue #7）。被上游拒绝的 admit
         // （rate_limited 等）不占额度，所以只在这里做「还有没有预算」的预检，
         // 真正扣减在 admit 成功之后。
-        if (opts.sessionBudget && opts.sessionBudget.remaining <= 0) {
+        // remaining === null = 不限额（控制台的 0 = 不限）：恒放行，不判耗尽。
+        // 见 .agents/notes/implemented/bug-fix/2026-09-24-zero-session-budget-means-unlimited.md
+        if (
+          opts.sessionBudget &&
+          opts.sessionBudget.remaining !== null &&
+          opts.sessionBudget.remaining <= 0
+        ) {
           failures.push({
             key,
             email: emailByKey.get(key),
@@ -1068,9 +1075,11 @@ export class AccountRuntimes {
         const reusedSession = reusable
         await rt.sessions.ensureSession(model)
         // 只有真的新建了计费会话才扣预算（复用热 session / 被拒绝的 admit 不扣）。
+        // remaining === null（0 = 不限）不递减：它不是一个会被用尽的额度。
         if (
           !reusedSession &&
           opts.sessionBudget &&
+          opts.sessionBudget.remaining !== null &&
           (rt.sessions.admitCount || 0) > admitsBefore
         ) {
           opts.sessionBudget.remaining -= 1
@@ -1121,6 +1130,29 @@ export class AccountRuntimes {
     const allExhausted =
       failures.length > 0 &&
       failures.every((f) => EXHAUST_CODES.has(f.code))
+    // 全部账号都只是被「本次请求的新会话预算」拦下：这是**本地**请求级限制，
+    // 不是账号不可用，更不是上游没额度。必须给独立错误码——否则用户看到的是
+    // 笼统的 no_available_account，会去查账号/额度，而真正该做的是重试（下个请求
+    // 重新拿到预算）或调高控制台「额度保护」→ 单请求新会话上限。
+    // 见 .agents/notes/implemented/bug-fix/2026-09-24-zero-session-budget-means-unlimited.md
+    const allBudgetExhausted =
+      failures.length > 0 &&
+      failures.every((f) => f.code === 'session_budget_exhausted')
+    if (allBudgetExhausted) {
+      throw new UpstreamError(
+        'No available Freebuff account for model ' +
+          model +
+          ': this request used up its new-session budget (Freebucks meter). Retry, or raise the per-request new-session limit in the console. Tried ' +
+          failures.length +
+          ' account(s).',
+        {
+          status: 429,
+          code: 'session_budget_exhausted',
+          body: { model, failures },
+          retryAfterMs: this.earliestCooldownMs(),
+        },
+      )
+    }
     if (allExhausted) {
       const cheapest = failures.map((f) => f.message).join('; ')
       // 两个闸门都命中时用更中性的 freebucks_exhausted 保持兼容（既有调用方/测试
