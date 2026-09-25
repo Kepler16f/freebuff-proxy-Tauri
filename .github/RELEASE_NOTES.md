@@ -9,8 +9,8 @@ freebuff-proxy 的桌面客户端发布（上游 v1.14.7，版本号保持不变
 | --- | --- |
 | Windows x64 | `FreebuffProxy_1.14.7_x64-setup.exe` |
 | Windows ARM64 | `FreebuffProxy_1.14.7_arm64-setup.exe` |
-| Linux x64 | `freebuff-proxy-desktop_1.14.7_amd64.deb` / `freebuff-proxy-desktop_1.14.7_amd64.AppImage` |
-| Linux ARM64 | `freebuff-proxy-desktop_1.14.7_arm64.deb` / `freebuff-proxy-desktop_1.14.7_arm64.AppImage` |
+| Linux x64 | `freebuff-proxy-desktop_1.14.7_amd64.deb` / `FreebuffProxy_1.14.7_amd64.AppImage` |
+| Linux ARM64 | `freebuff-proxy-desktop_1.14.7_arm64.deb` / `FreebuffProxy_1.14.7_aarch64.AppImage` |
 | macOS (Intel) | `FreebuffProxy_1.14.7_x64.dmg` |
 | macOS (Apple Silicon) | `FreebuffProxy_1.14.7_aarch64.dmg` |
 

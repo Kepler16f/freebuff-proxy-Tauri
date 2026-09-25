@@ -65,7 +65,6 @@
 | Windows x64 / ARM64 | `FreebuffProxy_1.14.7_x64-setup.exe` / `FreebuffProxy_1.14.7_arm64-setup.exe` |
 | Linux x64 / ARM64 | `*.deb`（直接安装）或 `*.AppImage`（`chmod +x` 后运行） |
 | macOS Intel / Apple Silicon | `*_x64.dmg` / `*_aarch64.dmg` |
-
 - **托盘常驻**：关窗即最小化，服务后台运行；托盘菜单打开控制台 / 重启服务 / 退出
 - **首启密码引导**：自动复制到剪贴板并弹窗告知，登录框自动填充（托盘菜单可关闭）
 - **完全自包含**：安装包内置对应平台的 node 运行时与服务端，装完离线可用，无需 Node 环境
