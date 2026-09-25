@@ -28,7 +28,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis", "deb", "appimage", "dmg"],
-    "icon": ["icons/icon.ico"],
+    "icon": ["icons/icon.ico", "icons/icon.png", "icons/128x128.png"],
     "resources": ["resources/server"],
     "windows": {
       "webviewInstallMode": {
