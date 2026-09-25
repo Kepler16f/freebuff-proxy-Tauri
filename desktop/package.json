@@ -1,0 +1,14 @@
+{
+  "name": "freebuff-proxy-desktop",
+  "private": true,
+  "version": "1.14.7",
+  "description": "Freebuff Proxy 桌面客户端（Tauri 壳，内嵌本地服务）",
+  "scripts": {
+    "tauri": "tauri",
+    "prepare-runtime": "node scripts/prepare-desktop-runtime.mjs",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

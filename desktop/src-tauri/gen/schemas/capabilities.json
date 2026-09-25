@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"主窗口核心权限：允许 splash 使用事件与窗口 API（core:default 含 event/window/webview 默认集）","local":true,"windows":["main"],"permissions":["core:default"]}}

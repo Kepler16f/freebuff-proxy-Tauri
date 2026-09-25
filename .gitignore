@@ -41,7 +41,7 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 dist/
-build/
+/build/
 
 # 系统 / IDE
 .DS_Store
@@ -54,3 +54,8 @@ Thumbs.db
 
 # 本地 e2e 测试实例数据（fb-test 容器挂载）
 data-test/
+
+# Tauri 桌面客户端（desktop/）的本地构建产物
+desktop/node_modules/
+desktop/src-tauri/target/
+desktop/src-tauri/resources/

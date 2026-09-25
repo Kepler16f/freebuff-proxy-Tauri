@@ -1,0 +1,7 @@
+# 仓库统一 LF（CI 门禁与校验脚本都按 LF 断言）；Windows 批处理保持 CRLF
+* text=auto
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.png binary
+*.ico binary
+*.icns binary

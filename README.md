@@ -1,16 +1,22 @@
 <div align="center">
-<h1>freebuff-proxy</h1>
-<p><strong>把 Freebuff 的免费额度，变成一个 OpenAI 兼容的 API 端点。</strong></p>
+<h1>freebuff-proxy-Tauri</h1>
+<p><strong>把 Freebuff 的免费额度，变成一个 OpenAI 兼容的 API 端点 —— 现在有桌面客户端了。</strong></p>
 <p>
-<a href="https://github.com/HengXin666/freebuff-proxy/releases"><img src="https://img.shields.io/github/v/release/HengXin666/freebuff-proxy?label=release&color=2496ED" alt="Release"></a>
-<a href="https://github.com/HengXin666/freebuff-proxy/actions/workflows/docker-image.yml"><img src="https://github.com/HengXin666/freebuff-proxy/actions/workflows/docker-image.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/Kepler16f/freebuff-proxy-Tauri/releases"><img src="https://img.shields.io/github/v/release/Kepler16f/freebuff-proxy-Tauri?label=release&color=2496ED" alt="Release"></a>
+<a href="https://github.com/Kepler16f/freebuff-proxy-Tauri/actions/workflows/release-desktop.yml"><img src="https://github.com/Kepler16f/freebuff-proxy-Tauri/actions/workflows/release-desktop.yml/badge.svg" alt="Desktop CI"></a>
 <a href="./LICENSE"><img src="https://img.shields.io/github/license/HengXin666/freebuff-proxy?color=green" alt="License"></a>
 <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A522-339933?logo=node.js&logoColor=white" alt="Node"></a>
-<a href="https://github.com/HengXin666/freebuff-proxy/pkgs/container/freebuff-proxy"><img src="https://img.shields.io/badge/docker-ghcr.io-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
-<a href="https://github.com/HengXin666/freebuff-proxy/commits/main"><img src="https://img.shields.io/github/last-commit/HengXin666/freebuff-proxy" alt="Last commit"></a>
-<a href="https://github.com/HengXin666/freebuff-proxy"><img src="https://img.shields.io/github/repo-size/HengXin666/freebuff-proxy" alt="Repo size"></a>
+<a href="https://github.com/HengXin666/freebuff-proxy"><img src="https://img.shields.io/badge/上游-freebuff--proxy-0969DA" alt="Upstream"></a>
 </p>
-<p><strong>超轻量</strong> · <strong>一键 Docker 部署</strong> · <strong>一切管理都在前端页面</strong></p>
+<p><strong>Windows / Linux / macOS 六平台安装包</strong> · <strong>双击安装，托盘常驻</strong> · <strong>服务端与上游 v1.14.7 完全一致</strong></p>
+</div>
+
+<div align="center">
+
+**本仓库是 [HengXin666/freebuff-proxy](https://github.com/HengXin666/freebuff-proxy) 的下游发行版**：
+服务端代码零改动，仅新增 `desktop/` —— 一个 Tauri 桌面壳（托盘常驻 + 内嵌控制台 + 首启密码自动
+填充），并提供六平台安装包。想用 Docker / 命令行部署，请直接用上游仓库。
+
 </div>
 
 下游 Agent 只需要标准的 `base_url + api_key + model`，本服务负责 Freebuff 身份凭证（多账号池）、免费 session 准入、注入 `cost_mode=free` 与 `freebuff_instance_id`，并把**流式 / 非流式响应原样透传**。
@@ -47,6 +53,27 @@
 <p align="center"><img src="docs/images/03-users.webp" alt="用户管理"></p>
 
 > 截图为控制台实际界面（用本地演示实例 + 模拟上游生成，账号与 API Key 均为占位值并已打码）。
+
+---
+
+## 🖥️ 桌面客户端（本仓库新增）
+
+到 [Releases](https://github.com/Kepler16f/freebuff-proxy-Tauri/releases) 下载，**双击安装即用**：
+
+| 平台 | 文件 |
+|------|------|
+| Windows x64 / ARM64 | `FreebuffProxy_1.14.7_x64-setup.exe` / `FreebuffProxy_1.14.7_arm64-setup.exe` |
+| Linux x64 / ARM64 | `*.deb`（直接安装）或 `*.AppImage`（`chmod +x` 后运行） |
+| macOS Intel / Apple Silicon | `*_x64.dmg` / `*_aarch64.dmg` |
+
+- **托盘常驻**：关窗即最小化，服务后台运行；托盘菜单打开控制台 / 重启服务 / 退出
+- **首启密码引导**：自动复制到剪贴板并弹窗告知，登录框自动填充（托盘菜单可关闭）
+- **完全自包含**：安装包内置对应平台的 node 运行时与服务端，装完离线可用，无需 Node 环境
+- **共存友好**：检测到已有实例（zip / Docker）时自动附着显示，不抢端口
+- 数据在系统应用数据目录（Windows/macOS `%APPDATA%` 系 / Linux `~/.local/share`），升级不丢
+
+> Windows 首次运行 SmartScreen 可能提示未签名（更多信息 → 仍要运行）；macOS 未公证，
+> 被拦时执行 `xattr -cr /Applications/FreebuffProxy.app`；Linux AppImage 需 `chmod +x`。
 
 ---
 
@@ -100,9 +127,13 @@ Web 控制台「总览」的**额度（今日 · FB/h）**列展示的就是这�
 
 镜像非常轻量：`node:22-alpine` + 仅 2 个 JS 运行时依赖（`undici` / `yaml`），整体约几十 MB。
 
+**桌面用户**：直接用上面的 [桌面客户端](#️-桌面客户端本仓库新增)，无需 Docker、无需命令行。
+
+**Docker 部署**（上游推荐方式，服务器场景）：
+
 ```bash
-git clone https://github.com/HengXin666/freebuff-proxy.git
-cd freebuff-proxy
+git clone https://github.com/Kepler16f/freebuff-proxy-Tauri.git
+cd freebuff-proxy-Tauri
 
 # （可选）按需配置管理员密码、代理、端口
 cp .env.example .env

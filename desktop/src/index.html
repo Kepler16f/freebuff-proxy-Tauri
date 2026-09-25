@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>Freebuff Proxy</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: #0b1220; color: #e2e8f0; font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      user-select: none;
+    }
+    .bolt { width: 72px; height: 72px; margin-bottom: 28px; }
+    h1 { font-size: 20px; font-weight: 600; margin: 0 0 10px; }
+    #status { font-size: 14px; color: #94a3b8; margin: 0; }
+    .spinner {
+      width: 26px; height: 26px; margin-top: 22px;
+      border: 3px solid #1e293b; border-top-color: #22d3ee; border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    .spinner.hidden { display: none; }
+    #error { display: none; margin-top: 18px; max-width: 560px; font-size: 13px; color: #f87171;
+             white-space: pre-wrap; text-align: center; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <svg class="bolt" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M13.5 2 4.5 13.5h5L8 22l9.5-11.5h-5.2L13.5 2Z" fill="#22d3ee"/>
+  </svg>
+  <h1>Freebuff Proxy</h1>
+  <p id="status">正在启动本地服务…</p>
+  <div class="spinner" id="spinner"></div>
+  <p id="error"></p>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const errorEl = document.getElementById('error');
+    const spinner = document.getElementById('spinner');
+
+    function go(url) {
+      if (go.done || !url) return;
+      go.done = true;
+      statusEl.textContent = '服务已就绪，正在打开控制台…';
+      setTimeout(() => location.replace(url), 200);
+    }
+
+    function showError(msg) {
+      if (go.done) return;
+      spinner.classList.add('hidden');
+      statusEl.textContent = '服务启动失败';
+      errorEl.style.display = 'block';
+      errorEl.textContent = msg;
+    }
+
+    (async () => {
+      if (!window.__TAURI__) {
+        showError('客户端初始化失败（IPC 桥缺失）。请重装客户端；若反复出现请反馈。');
+        return;
+      }
+      const { event, core } = window.__TAURI__;
+
+      // 先注册监听，再做初始查询 + 持续轮询兜底：
+      // 服务就绪事件可能在页面 JS 跑起来之前就发出（WebView 冷启动慢于服务启动），
+      // 只依赖事件会永久卡在 splash —— 轮询保证错过事件也能前进。
+      await event.listen('server://ready', (e) => go('http://127.0.0.1:' + e.payload.port + '/'));
+      await event.listen('server://failed', (e) => showError(
+        (e.payload && e.payload.detail) ? e.payload.detail : '未知错误'));
+
+      const poll = async () => {
+        try {
+          const s = await core.invoke('get_server_state');
+          if (s.ready) go('http://127.0.0.1:' + s.port + '/');
+          else if (s.failed) showError('本地服务启动失败，详情见弹窗；可从托盘图标重启服务。');
+        } catch { /* invoke 偶发失败时下一轮重试 */ }
+      };
+      await poll();
+      setInterval(poll, 500);
+    })();
+  </script>
+</body>
+</html>

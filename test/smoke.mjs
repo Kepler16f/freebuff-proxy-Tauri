@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import net from 'node:net'
 import http from 'node:http'
+import { fileURLToPath } from 'node:url'
 import { loadConfig } from '../src/config.js'
 import { AccountRuntimes } from '../src/app-context.js'
 import { SessionHandleStore } from '../src/session-handles.js'
@@ -5734,11 +5735,11 @@ server.close()
     }
     return out
   }
-  const root = new URL('..', import.meta.url).pathname
-  const scanned = walk(root).filter((p) => !p.includes('/test/repro-'))
+  const root = fileURLToPath(new URL('..', import.meta.url))
+  const scanned = walk(root).filter((p) => !p.split(path.sep).join('/').includes('/test/repro-'))
   assert.ok(scanned.length > 20, `全仓扫描应覆盖足够多文件，实际 ${scanned.length}`)
   for (const abs of scanned) {
-    const rel = path.relative(root, abs)
+    const rel = path.relative(root, abs).split(path.sep).join('/')
     // 本文档（§3/§7）需要**引用**这些旧说法来解释纠错过程，豁免；
     // smoke 自身含正则字面量，也豁免（它就是这个守卫）。
     if (rel === 'docs/account-scheduling-and-refund.md') continue
